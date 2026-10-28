@@ -96,3 +96,8 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Automated tests
+
+The backend includes Jest unit tests (`npm test -- --runInBand`) and database-backed integration tests (`npm run test:e2e -- --runInBand`). The integration command refuses to run unless `DB_DATABASE=bolclick_test` and `NODE_ENV=test`, so it cannot target the normal `mall_db` database by accident. Use a disposable PostgreSQL database for local execution.
+
+The frontend includes Cypress smoke tests for the public landing page, login navigation, and required fields on store registration (`npm run test:e2e`). The GitHub Actions quality workflow runs backend unit/coverage/build/integration checks and frontend build/browser checks on pushes and pull requests.
