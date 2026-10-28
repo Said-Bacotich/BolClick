@@ -8,3 +8,4 @@ dist/
 backend/temp/
 backend/uploads/
 backend/coverage/
+/docs/sqa/
