@@ -16,6 +16,7 @@ public class LoteIngreso {
     
     private Producto producto;
     private Proveedor proveedor;
+    private Sucursal sucursal;
 
     private Double costoUnitario;
 
@@ -41,4 +42,5 @@ public class LoteIngreso {
     public String getFechaProduccion() { return fechaProduccion; }
     public Producto getProducto() { return producto; }
     public Proveedor getProveedor() { return proveedor; }
+    public Sucursal getSucursal() { return sucursal; }
 }

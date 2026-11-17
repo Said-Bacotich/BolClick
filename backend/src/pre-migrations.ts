@@ -104,7 +104,7 @@ export async function runPreMigrations() {
         WHERE table_name = $1 AND column_name = $2
       `, [table, oldCol]);
 
-      if (checkRes.rowCount > 0) {
+      if ((checkRes.rowCount ?? 0) > 0) {
         console.log(`Pre-migration: Renaming ${table}.${oldCol} to ${newCol}...`);
         await client.query(`ALTER TABLE "${table}" RENAME COLUMN "${oldCol}" TO "${newCol}"`);
       }
@@ -116,7 +116,7 @@ export async function runPreMigrations() {
       FROM information_schema.columns 
       WHERE table_name = 'tenants' AND column_name = 'password'
     `);
-    if (checkTenantPass.rowCount > 0) {
+    if ((checkTenantPass.rowCount ?? 0) > 0) {
       console.log('Pre-migration: Dropping tenants.password column...');
       await client.query('ALTER TABLE "tenants" DROP COLUMN "password"');
     }
@@ -127,7 +127,7 @@ export async function runPreMigrations() {
       FROM information_schema.columns 
       WHERE table_name = 'ventas' AND column_name = 'detalle'
     `);
-    if (checkVentasDetalle.rowCount > 0) {
+    if ((checkVentasDetalle.rowCount ?? 0) > 0) {
       console.log('Pre-migration: Dropping ventas.detalle column...');
       await client.query('ALTER TABLE "ventas" DROP COLUMN "detalle"');
     }
@@ -153,7 +153,7 @@ export async function runPreMigrations() {
     `);
 
     let pendingAjustes: { rows: any[] } = { rows: [] };
-    if (checkSucursalCol.rowCount > 0 && checkProductoCol.rowCount > 0) {
+    if ((checkSucursalCol.rowCount ?? 0) > 0 && (checkProductoCol.rowCount ?? 0) > 0) {
       pendingAjustes = await client.query(`
         SELECT id, tenant_id, sucursal_id, producto_id 
         FROM ajustes_inventario 
@@ -166,7 +166,7 @@ export async function runPreMigrations() {
       let tenantId = row.tenant_id;
       if (!tenantId) {
         const anyTenant = await client.query('SELECT id FROM tenants LIMIT 1');
-        tenantId = anyTenant.rowCount > 0 ? anyTenant.rows[0].id : null;
+        tenantId = (anyTenant.rowCount ?? 0) > 0 ? anyTenant.rows[0].id : null;
       }
       const sucursalId = row.sucursal_id || null;
       const productoId = row.producto_id;
@@ -191,7 +191,7 @@ export async function runPreMigrations() {
       `, [tenantId, sucursalId, productoId]);
 
       let stockId = '';
-      if (stockRes.rowCount > 0) {
+      if ((stockRes.rowCount ?? 0) > 0) {
         stockId = stockRes.rows[0].id;
       } else {
         
@@ -214,12 +214,12 @@ export async function runPreMigrations() {
     
     
     const cleanNulls = await client.query("DELETE FROM ajustes_inventario WHERE stock_id IS NULL OR CAST(stock_id AS text) = ''");
-    if (cleanNulls.rowCount > 0) {
+    if ((cleanNulls.rowCount ?? 0) > 0) {
       console.log(`Pre-migration: Deleted ${cleanNulls.rowCount} records with null/empty stock_id from ajustes_inventario.`);
     }
 
     const cleanOrphans = await client.query("DELETE FROM ajustes_inventario WHERE stock_id NOT IN (SELECT id FROM stock)");
-    if (cleanOrphans.rowCount > 0) {
+    if ((cleanOrphans.rowCount ?? 0) > 0) {
       console.log(`Pre-migration: Deleted ${cleanOrphans.rowCount} records from ajustes_inventario because their stock_id did not exist in stock table.`);
     }
 
@@ -250,7 +250,7 @@ export async function runPreMigrations() {
     `);
 
     let pendingLotes: { rows: any[] } = { rows: [] };
-    if (checkLoteSucursalCol.rowCount > 0 && checkLoteProductoCol.rowCount > 0) {
+    if ((checkLoteSucursalCol.rowCount ?? 0) > 0 && (checkLoteProductoCol.rowCount ?? 0) > 0) {
       pendingLotes = await client.query(`
         SELECT id, tenant_id, sucursal_id, producto_id 
         FROM lotes_ingreso 
@@ -262,7 +262,7 @@ export async function runPreMigrations() {
       let tenantId = row.tenant_id;
       if (!tenantId) {
         const anyTenant = await client.query('SELECT id FROM tenants LIMIT 1');
-        tenantId = anyTenant.rowCount > 0 ? anyTenant.rows[0].id : null;
+        tenantId = (anyTenant.rowCount ?? 0) > 0 ? anyTenant.rows[0].id : null;
       }
       const sucursalId = row.sucursal_id || null;
       const productoId = row.producto_id;
@@ -286,7 +286,7 @@ export async function runPreMigrations() {
       `, [tenantId, sucursalId, productoId]);
 
       let stockId = '';
-      if (stockRes.rowCount > 0) {
+      if ((stockRes.rowCount ?? 0) > 0) {
         stockId = stockRes.rows[0].id;
       } else {
         
@@ -308,12 +308,12 @@ export async function runPreMigrations() {
 
     
     const cleanLoteNulls = await client.query("DELETE FROM lotes_ingreso WHERE stock_id IS NULL OR CAST(stock_id AS text) = ''");
-    if (cleanLoteNulls.rowCount > 0) {
+    if ((cleanLoteNulls.rowCount ?? 0) > 0) {
       console.log(`Pre-migration: Deleted ${cleanLoteNulls.rowCount} records with null/empty stock_id from lotes_ingreso.`);
     }
 
     const cleanLoteOrphans = await client.query("DELETE FROM lotes_ingreso WHERE stock_id NOT IN (SELECT id FROM stock)");
-    if (cleanLoteOrphans.rowCount > 0) {
+    if ((cleanLoteOrphans.rowCount ?? 0) > 0) {
       console.log(`Pre-migration: Deleted ${cleanLoteOrphans.rowCount} records from lotes_ingreso because their stock_id did not exist in stock table.`);
     }
 
@@ -351,7 +351,7 @@ export async function runPreMigrations() {
       WHERE table_name = 'productos' AND column_name = 'category'
     `);
     
-    if (checkCategoryTextCol.rowCount > 0) {
+    if ((checkCategoryTextCol.rowCount ?? 0) > 0) {
       const pendingProducts = await client.query(`
         SELECT id, tenant_id, category 
         FROM productos 
@@ -367,7 +367,7 @@ export async function runPreMigrations() {
         `, [row.tenant_id, catName]);
 
         let catId = '';
-        if (catRes.rowCount > 0) {
+        if ((catRes.rowCount ?? 0) > 0) {
           catId = catRes.rows[0].id;
         } else {
           
@@ -455,7 +455,7 @@ export async function runPreMigrations() {
       `, [row.producto_id]);
 
       let varId = '';
-      if (varRes.rowCount > 0) {
+      if ((varRes.rowCount ?? 0) > 0) {
         varId = varRes.rows[0].id;
       } else {
         
@@ -476,7 +476,7 @@ export async function runPreMigrations() {
 
     
     const cleanStockNulls = await client.query("DELETE FROM stock WHERE producto_variacion_id IS NULL");
-    if (cleanStockNulls.rowCount > 0) {
+    if ((cleanStockNulls.rowCount ?? 0) > 0) {
       console.log(`Pre-migration: Deleted ${cleanStockNulls.rowCount} stock records due to missing variation.`);
     }
 
@@ -498,7 +498,7 @@ export async function runPreMigrations() {
         FROM information_schema.columns 
         WHERE table_name = $1 AND column_name = $2
       `, [table, col]);
-      if (checkDrop.rowCount > 0) {
+      if ((checkDrop.rowCount ?? 0) > 0) {
         
         const fks = await client.query(`
           SELECT constraint_name FROM information_schema.table_constraints

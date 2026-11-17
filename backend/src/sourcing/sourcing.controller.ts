@@ -35,6 +35,12 @@ export class SourcingController {
     return this.sourcingService.getHistorial(tenantId);
   }
 
+  @Get('vencimientos')
+  @RequirePermission('sourcing.ver')
+  getVencimientos(@TenantId() tenantId: string, @Req() req: any) {
+    return this.sourcingService.getVencimientos(tenantId, req.user);
+  }
+
   @Put(':id')
   @RequirePermission('sourcing.editar')
   update(

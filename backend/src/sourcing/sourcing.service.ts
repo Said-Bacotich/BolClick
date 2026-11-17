@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Not, IsNull } from 'typeorm';
 import { LoteIngreso } from './lote-ingreso.entity';
 import { CreateLoteIngresoDto } from './dto/create-lote.dto';
 import { Stock } from '../stock/stock.entity';
@@ -8,6 +8,7 @@ import { StockService } from '../stock/stock.service';
 import { Sucursal } from '../sucursales/sucursal.entity';
 import { Producto } from '../productos/producto.entity';
 import { ProductoVariacion } from '../productos/producto-variacion.entity';
+import { UserRole } from '../users/user.entity';
 
 @Injectable()
 export class SourcingService {
@@ -124,6 +125,35 @@ export class SourcingService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async getVencimientos(
+    tenant_id: string,
+    user: { role: string; sucursalId?: string | null },
+  ) {
+    const todas = user.role === UserRole.OWNER || user.role === UserRole.SUPER_ADMIN;
+    // Sin asignacion no se amplian los permisos a toda la tienda.
+    if (!todas && !user.sucursalId) return [];
+    const lotes = await this.loteRep.find({
+      where: {
+        tenant_id,
+        fechaVencimiento: Not(IsNull()),
+        stock: {
+          tenant_id,
+          ...(!todas ? { sucursal_id: user.sucursalId! } : {}),
+        },
+      },
+      relations: ['stock', 'stock.producto', 'stock.sucursal'],
+      order: { fechaVencimiento: 'ASC', id: 'ASC' },
+    });
+    // Respuesta dedicada: no expone cantidades ni el objeto stock.
+    return lotes.map(lote => ({
+      id: lote.id,
+      fechaVencimiento: lote.fechaVencimiento,
+      sucursal_id: lote.stock.sucursal_id,
+      producto: { name: lote.stock.producto?.name ?? 'Producto no disponible' },
+      sucursal: { name: lote.stock.sucursal?.name ?? 'Sucursal no disponible' },
+    }));
   }
 
   async getHistorial(tenant_id: string): Promise<any[]> {

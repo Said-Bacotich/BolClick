@@ -66,6 +66,9 @@ public interface ApiService {
     @retrofit2.http.GET("sourcing")
     Call<java.util.List<com.example.template.network.models.LoteIngreso>> getLotes();
 
+    @retrofit2.http.GET("sourcing/vencimientos")
+    Call<java.util.List<com.example.template.network.models.LoteIngreso>> getVencimientos();
+
     @POST("sourcing")
     Call<com.example.template.network.models.LoteIngreso> createLote(@Body com.example.template.network.models.LoteIngreso lotePeticion);
 

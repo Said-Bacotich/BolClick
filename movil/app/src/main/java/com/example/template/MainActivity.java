@@ -194,7 +194,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         Menu menu = navigationView.getMenu();
 
         if ("OWNER".equalsIgnoreCase(role)) {
-            
+            menu.findItem(R.id.nav_vencimientos).setVisible(true);
             return;
         }
 
@@ -213,6 +213,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                             menu.findItem(R.id.nav_categorias).setVisible(pr.isCatalogoVer());
                             menu.findItem(R.id.nav_sucursales).setVisible(pr.isSucursalesVer());
                             menu.findItem(R.id.nav_sourcing).setVisible(pr.isSourcingVer());
+                            menu.findItem(R.id.nav_vencimientos).setVisible(pr.isSourcingVer());
                             menu.findItem(R.id.nav_stock).setVisible(pr.isInventarioVer());
                             menu.findItem(R.id.nav_pos).setVisible(pr.isVentasVer());
                             menu.findItem(R.id.nav_sales_history).setVisible(pr.isVentasVer());
@@ -245,6 +246,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             selectedFragment = new CategoriasFragment();
         } else if (itemId == R.id.nav_sourcing) {
             selectedFragment = new SourcingFragment();
+        } else if (itemId == R.id.nav_vencimientos) {
+            selectedFragment = new com.example.template.ui.VencimientosFragment();
         } else if (itemId == R.id.nav_stock) {
             selectedFragment = new StockFragment();
         } else if (itemId == R.id.nav_pos) {

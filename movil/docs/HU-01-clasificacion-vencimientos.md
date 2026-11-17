@@ -44,9 +44,9 @@ fechas intermedias, limites de 14 y 15 dias, fechas ausentes e invalidas,
 cambios de mes y anio, anio bisiesto y horario de verano. Tambien comprueba
 que la clasificacion no modifica el calendario recibido.
 
-Validacion realizada: compilacion con `javac --release 11` y ejecucion directa
-con JUnit 4.13.2: **11 pruebas aprobadas**. El intento con Gradle no llego a
-ejecutar las pruebas: quedo sin avanzar al iniciar su proceso daemon.
+Validacion realizada: **11 pruebas aprobadas** con JUnit 4.13.2, tanto de forma
+independiente como mediante `:app:testDebugUnitTest` de Gradle durante la
+integracion de la seccion de recordatorios.
 
-Este issue aporta la logica y sus pruebas. La pantalla y la presentacion de los
-recordatorios se integraran en las tareas correspondientes de HU-01.
+Este issue aporta la logica y sus pruebas. La integracion con la pantalla se
+describe en [Seccion de recordatorios](HU-01-seccion-recordatorios.md).
