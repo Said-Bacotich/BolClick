@@ -337,7 +337,19 @@ public class PublicCatalogActivity extends AppCompatActivity {
         if (filteredProducts.isEmpty()) {
             llEmptyState.setVisibility(View.VISIBLE);
             rvCatalogProducts.setVisibility(View.GONE);
-            if (showingFavorites) {
+            boolean hasStoreFavorites = false;
+            for (CatalogProducto product : allProducts) {
+                if (favoritesStore.isFavorite(product.getId())) {
+                    hasStoreFavorites = true;
+                    break;
+                }
+            }
+            android.widget.LinearLayout emptyLayout = (android.widget.LinearLayout) llEmptyState;
+            ImageView emptyIcon = (ImageView) emptyLayout.getChildAt(0);
+            emptyIcon.setImageResource(showingFavorites ? R.drawable.ic_favorite_border : R.drawable.ic_search);
+            emptyIcon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            tvCatalogEmptyTitle.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+            if (showingFavorites && !hasStoreFavorites) {
                 tvCatalogEmptyTitle.setText(R.string.catalog_empty_favorites_title);
                 tvCatalogEmptyMessage.setText(R.string.catalog_empty_favorites_message);
             } else {
