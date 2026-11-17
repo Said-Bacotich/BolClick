@@ -22,6 +22,7 @@ import com.example.template.network.models.CatalogCartItem;
 import com.example.template.network.models.CatalogProducto;
 import com.example.template.ui.adapters.CatalogCartAdapter;
 import com.example.template.ui.adapters.CatalogProductAdapter;
+import com.example.template.utils.CatalogFavoritesStore;
 import com.example.template.utils.ImageLoader;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.chip.Chip;
@@ -29,7 +30,7 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -44,6 +45,7 @@ public class PublicCatalogActivity extends AppCompatActivity {
     private RecyclerView rvCatalogProducts;
     private ExtendedFloatingActionButton fabCart;
     private View flLoading, llEmptyState;
+    private TextView tvCatalogEmptyTitle, tvCatalogEmptyMessage;
 
     
     private List<CatalogProducto> allProducts = new ArrayList<>();
@@ -52,6 +54,7 @@ public class PublicCatalogActivity extends AppCompatActivity {
 
     
     private CatalogProductAdapter productAdapter;
+    private CatalogFavoritesStore favoritesStore;
 
     
     private String storeName = "Nike Store";
@@ -60,6 +63,7 @@ public class PublicCatalogActivity extends AppCompatActivity {
 
     private String selectedCategory = "TODOS";
     private String searchQuery = "";
+    private boolean showingFavorites = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +92,8 @@ public class PublicCatalogActivity extends AppCompatActivity {
         }
 
         initViews();
+        favoritesStore = new CatalogFavoritesStore(this);
+        favoritesStore.selectStore(null, domain);
         setupToolbar();
         setupRecyclerView();
         setupSearch();
@@ -109,6 +115,8 @@ public class PublicCatalogActivity extends AppCompatActivity {
         fabCart = findViewById(R.id.fabCart);
         flLoading = findViewById(R.id.flLoading);
         llEmptyState = findViewById(R.id.llEmptyState);
+        tvCatalogEmptyTitle = findViewById(R.id.tvCatalogEmptyTitle);
+        tvCatalogEmptyMessage = findViewById(R.id.tvCatalogEmptyMessage);
 
         fabCart.setOnClickListener(v -> showCartDialog());
     }
@@ -135,7 +143,12 @@ public class PublicCatalogActivity extends AppCompatActivity {
         }
 
         rvCatalogProducts.setLayoutManager(new GridLayoutManager(this, spanCount));
-        productAdapter = new CatalogProductAdapter(filteredProducts, this::showProductDetailDialog);
+        productAdapter = new CatalogProductAdapter(
+                filteredProducts,
+                this::showProductDetailDialog,
+                favoritesStore,
+                this::onFavoriteToggle
+        );
         rvCatalogProducts.setAdapter(productAdapter);
     }
 
@@ -172,6 +185,12 @@ public class PublicCatalogActivity extends AppCompatActivity {
                     com.example.template.network.models.CatalogResponse catalog = response.body();
                     
                     if (catalog.getTienda() != null) {
+                        favoritesStore.selectStore(
+                                catalog.getTienda().getId(),
+                                catalog.getTienda().getDomain() != null
+                                        ? catalog.getTienda().getDomain()
+                                        : domain
+                        );
                         storeName = catalog.getTienda().getName();
                         storePhone = catalog.getTienda().getPhone();
                         storeDesc = "Dominio: " + catalog.getTienda().getDomain();
@@ -235,56 +254,65 @@ public class PublicCatalogActivity extends AppCompatActivity {
     private void setupCategoryChips() {
         cgCatalogCategories.removeAllViews();
 
-        
-        Set<String> categories = new HashSet<>();
-        categories.add("TODOS");
+        Set<String> categories = new LinkedHashSet<>();
         for (CatalogProducto p : allProducts) {
             if (p.getCategory() != null && !p.getCategory().trim().isEmpty()) {
                 categories.add(p.getCategory());
             }
         }
 
-        
+        addCatalogFilterChip(getString(R.string.catalog_filter_all), "ALL", true);
+        addCatalogFilterChip(getString(R.string.catalog_filter_favorites), "FAVORITES", false);
         for (String cat : categories) {
-            Chip chip = new Chip(this);
-            chip.setText(cat);
-            chip.setCheckable(true);
-            chip.setCheckedIconVisible(false);
-            chip.setChipStrokeColorResource(R.color.border_color);
-            chip.setChipStrokeWidth(1f);
+            addCatalogFilterChip(cat, "CATEGORY:" + cat, false);
+        }
+    }
 
-            if ("TODOS".equals(cat)) {
-                chip.setChecked(true);
-                chip.setChipBackgroundColorResource(R.color.primary_color);
-                chip.setTextColor(androidx.core.content.ContextCompat.getColorStateList(this, R.color.white));
-                chip.setChipStrokeColorResource(R.color.primary_color);
-            } else {
-                chip.setChecked(false);
-                chip.setChipBackgroundColorResource(R.color.white);
-                chip.setTextColor(androidx.core.content.ContextCompat.getColorStateList(this, R.color.text_secondary));
+    private void addCatalogFilterChip(String label, String filterKey, boolean checked) {
+        Chip chip = new Chip(this);
+        chip.setText(label);
+        chip.setTag(filterKey);
+        chip.setCheckable(true);
+        chip.setCheckedIconVisible(false);
+        chip.setChipStrokeWidth(1f);
+        chip.setChecked(checked);
+        updateCatalogChipStyle(chip, checked);
+
+        chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (!isChecked) {
+                return;
             }
 
-            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    
-                    for (int i = 0; i < cgCatalogCategories.getChildCount(); i++) {
-                        Chip c = (Chip) cgCatalogCategories.getChildAt(i);
-                        if (c != chip) {
-                            c.setChecked(false);
-                            c.setChipBackgroundColorResource(R.color.white);
-                            c.setTextColor(androidx.core.content.ContextCompat.getColorStateList(this, R.color.text_secondary));
-                            c.setChipStrokeColorResource(R.color.border_color);
-                        }
-                    }
-                    chip.setChipBackgroundColorResource(R.color.primary_color);
-                    chip.setTextColor(androidx.core.content.ContextCompat.getColorStateList(this, R.color.white));
-                    chip.setChipStrokeColorResource(R.color.primary_color);
-                    selectedCategory = cat;
-                    filterProducts();
+            for (int i = 0; i < cgCatalogCategories.getChildCount(); i++) {
+                Chip otherChip = (Chip) cgCatalogCategories.getChildAt(i);
+                if (otherChip != chip) {
+                    updateCatalogChipStyle(otherChip, false);
                 }
-            });
+            }
+            updateCatalogChipStyle(chip, true);
 
-            cgCatalogCategories.addView(chip);
+            String selectedFilter = String.valueOf(chip.getTag());
+            showingFavorites = "FAVORITES".equals(selectedFilter);
+            if (selectedFilter.startsWith("CATEGORY:")) {
+                selectedCategory = selectedFilter.substring("CATEGORY:".length());
+            } else {
+                selectedCategory = "TODOS";
+            }
+            filterProducts();
+        });
+
+        cgCatalogCategories.addView(chip);
+    }
+
+    private void updateCatalogChipStyle(Chip chip, boolean checked) {
+        if (checked) {
+            chip.setChipBackgroundColorResource(R.color.primary_color);
+            chip.setTextColor(androidx.core.content.ContextCompat.getColorStateList(this, R.color.white));
+            chip.setChipStrokeColorResource(R.color.primary_color);
+        } else {
+            chip.setChipBackgroundColorResource(R.color.white);
+            chip.setTextColor(androidx.core.content.ContextCompat.getColorStateList(this, R.color.text_secondary));
+            chip.setChipStrokeColorResource(R.color.border_color);
         }
     }
 
@@ -292,11 +320,14 @@ public class PublicCatalogActivity extends AppCompatActivity {
         filteredProducts.clear();
         for (CatalogProducto p : allProducts) {
             boolean matchCategory = selectedCategory.equals("TODOS") || selectedCategory.equalsIgnoreCase(p.getCategory());
+            boolean matchFavorite = !showingFavorites || favoritesStore.isFavorite(p.getId());
+            String productName = p.getName() == null ? "" : p.getName().toLowerCase();
+            String productSku = p.getSku() == null ? "" : p.getSku().toLowerCase();
             boolean matchSearch = searchQuery.isEmpty() ||
-                    p.getName().toLowerCase().contains(searchQuery) ||
-                    p.getSku().toLowerCase().contains(searchQuery);
+                    productName.contains(searchQuery) ||
+                    productSku.contains(searchQuery);
 
-            if (matchCategory && matchSearch) {
+            if (matchCategory && matchFavorite && matchSearch) {
                 filteredProducts.add(p);
             }
         }
@@ -306,10 +337,27 @@ public class PublicCatalogActivity extends AppCompatActivity {
         if (filteredProducts.isEmpty()) {
             llEmptyState.setVisibility(View.VISIBLE);
             rvCatalogProducts.setVisibility(View.GONE);
+            if (showingFavorites) {
+                tvCatalogEmptyTitle.setText(R.string.catalog_empty_favorites_title);
+                tvCatalogEmptyMessage.setText(R.string.catalog_empty_favorites_message);
+            } else {
+                tvCatalogEmptyTitle.setText(R.string.catalog_empty_products_title);
+                tvCatalogEmptyMessage.setText(R.string.catalog_empty_products_message);
+            }
         } else {
             llEmptyState.setVisibility(View.GONE);
             rvCatalogProducts.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void onFavoriteToggle(CatalogProducto product) {
+        boolean added = favoritesStore.toggleFavorite(product.getId());
+        filterProducts();
+        Toast.makeText(
+                this,
+                added ? R.string.catalog_favorite_added : R.string.catalog_favorite_removed,
+                Toast.LENGTH_SHORT
+        ).show();
     }
 
     private void showProductDetailDialog(CatalogProducto product) {
@@ -323,6 +371,46 @@ public class PublicCatalogActivity extends AppCompatActivity {
         TextView tvDetailDescription = dialog.findViewById(R.id.tvDetailDescription);
         TextView tvDetailPrice = dialog.findViewById(R.id.tvDetailPrice);
         Button btnDetailAddToCart = dialog.findViewById(R.id.btnDetailAddToCart);
+
+        // Share the same store favorites as the catalog cards.
+        if (ivDetailImage != null) {
+            android.view.ViewGroup imageParent = (android.view.ViewGroup) ivDetailImage.getParent();
+            int imageIndex = imageParent.indexOfChild(ivDetailImage);
+            android.view.ViewGroup.LayoutParams imageParams = ivDetailImage.getLayoutParams();
+            imageParent.removeView(ivDetailImage);
+            android.widget.FrameLayout imageFrame = new android.widget.FrameLayout(this);
+            imageParent.addView(imageFrame, imageIndex, imageParams);
+            imageFrame.addView(ivDetailImage, new android.widget.FrameLayout.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+            android.widget.ImageButton detailFavorite = new android.widget.ImageButton(this);
+            float density = getResources().getDisplayMetrics().density;
+            int size = Math.round(48 * density);
+            int padding = Math.round(14 * density);
+            detailFavorite.setPadding(padding, padding, padding, padding);
+            detailFavorite.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            detailFavorite.setBackgroundResource(R.drawable.bg_favorite_button);
+            detailFavorite.setPadding(padding, padding, padding, padding);
+            detailFavorite.setImageTintList(android.content.res.ColorStateList.valueOf(
+                    androidx.core.content.ContextCompat.getColor(this, R.color.favorite_color)));
+            android.widget.FrameLayout.LayoutParams favoriteParams =
+                    new android.widget.FrameLayout.LayoutParams(size, size,
+                            android.view.Gravity.TOP | android.view.Gravity.END);
+            favoriteParams.setMargins(0, Math.round(8 * density), Math.round(8 * density), 0);
+            imageFrame.addView(detailFavorite, favoriteParams);
+            Runnable refreshFavorite = () -> {
+                boolean saved = favoritesStore.isFavorite(product.getId());
+                detailFavorite.setImageResource(saved ? R.drawable.ic_favorite : R.drawable.ic_favorite_border);
+                detailFavorite.setSelected(saved);
+                detailFavorite.setContentDescription(getString(
+                        saved ? R.string.catalog_favorite_remove : R.string.catalog_favorite_add));
+            };
+            refreshFavorite.run();
+            detailFavorite.setOnClickListener(v -> {
+                onFavoriteToggle(product);
+                refreshFavorite.run();
+            });
+        }
 
         if (tvDetailCategory != null) tvDetailCategory.setText(product.getCategory().toUpperCase());
         if (tvDetailName != null) tvDetailName.setText(product.getName());

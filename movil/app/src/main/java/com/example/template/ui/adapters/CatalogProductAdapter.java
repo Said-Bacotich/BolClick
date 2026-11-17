@@ -3,6 +3,7 @@ package com.example.template.ui.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -10,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.template.R;
 import com.example.template.network.models.CatalogProducto;
+import com.example.template.utils.CatalogFavoritesStore;
 import com.example.template.utils.ImageLoader;
 
 import java.util.List;
@@ -18,14 +20,27 @@ public class CatalogProductAdapter extends RecyclerView.Adapter<CatalogProductAd
 
     private List<CatalogProducto> list;
     private OnProductClickListener listener;
+    private CatalogFavoritesStore favoritesStore;
+    private OnFavoriteClickListener favoriteClickListener;
 
     public interface OnProductClickListener {
         void onProductClick(CatalogProducto product);
     }
 
-    public CatalogProductAdapter(List<CatalogProducto> list, OnProductClickListener listener) {
+    public interface OnFavoriteClickListener {
+        void onFavoriteClick(CatalogProducto product);
+    }
+
+    public CatalogProductAdapter(
+            List<CatalogProducto> list,
+            OnProductClickListener listener,
+            CatalogFavoritesStore favoritesStore,
+            OnFavoriteClickListener favoriteClickListener
+    ) {
         this.list = list;
         this.listener = listener;
+        this.favoritesStore = favoritesStore;
+        this.favoriteClickListener = favoriteClickListener;
     }
 
     public void updateData(List<CatalogProducto> newList) {
@@ -46,6 +61,22 @@ public class CatalogProductAdapter extends RecyclerView.Adapter<CatalogProductAd
 
         holder.tvName.setText(p.getName());
         holder.tvPrice.setText(String.format("Bs %.2f", p.getPrecioVenta()));
+
+        boolean isFavorite = favoritesStore != null && favoritesStore.isFavorite(p.getId());
+        int favoritePadding = Math.round(14 * holder.itemView.getResources().getDisplayMetrics().density);
+        holder.btnFavorite.setPadding(favoritePadding, favoritePadding, favoritePadding, favoritePadding);
+        holder.btnFavorite.setSelected(isFavorite);
+        holder.btnFavorite.setImageResource(
+                isFavorite ? R.drawable.ic_favorite : R.drawable.ic_favorite_border
+        );
+        holder.btnFavorite.setContentDescription(holder.itemView.getContext().getString(
+                isFavorite ? R.string.catalog_favorite_remove : R.string.catalog_favorite_add
+        ));
+        holder.btnFavorite.setOnClickListener(v -> {
+            if (favoriteClickListener != null) {
+                favoriteClickListener.onFavoriteClick(p);
+            }
+        });
 
         if (p.getCategory() != null && !p.getCategory().trim().isEmpty()) {
             holder.tvCategory.setText(p.getCategory().toUpperCase());
@@ -88,12 +119,14 @@ public class CatalogProductAdapter extends RecyclerView.Adapter<CatalogProductAd
     public static class ViewHolder extends RecyclerView.ViewHolder {
         View cvImageContainer;
         ImageView ivImage;
+        ImageButton btnFavorite;
         TextView tvCategory, tvName, tvDesc, tvPrice;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             cvImageContainer = itemView.findViewById(R.id.cvImageContainer);
             ivImage = itemView.findViewById(R.id.ivProductImage);
+            btnFavorite = itemView.findViewById(R.id.btnProductFavorite);
             tvCategory = itemView.findViewById(R.id.tvProductCategory);
             tvName = itemView.findViewById(R.id.tvProductName);
             tvDesc = itemView.findViewById(R.id.tvProductDescription);

@@ -191,19 +191,21 @@
                     app:tint="@color/text_secondary" />
 
                 <TextView
+                    android:id="@+id/tvCatalogEmptyTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="No se encontraron productos"
+                    android:text="@string/catalog_empty_products_title"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvCatalogEmptyMessage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Intenta cambiar los filtros de búsqueda o categoría."
+                    android:text="@string/catalog_empty_products_message"
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp"
                     android:gravity="center" />

@@ -15,8 +15,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
 
-    private static final String BASE_URL = "https://runner-affair-gratitude.ngrok-free.dev/api/";
-    
+    //private static final String BASE_URL = "https://runner-affair-gratitude.ngrok-free.dev/api/";
+    private static final String BASE_URL = "http://10.0.2.2:3000/api/";
     private static final boolean OMITIR_CERTIFICADOS_SSL = true;
 
     public static String getBaseUrl() {
